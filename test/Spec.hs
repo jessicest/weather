@@ -14,3 +14,14 @@ main = hspec $ do
 
     it "throws an exception if used with an empty list" $ do
       evaluate (head []) `shouldThrow` anyException
+
+      {-
+  describe "flightStats" $ do
+    it "returns stats about the flight" $ do
+
+  describe "parseFlight" $ do
+
+sampleFlight = [
+    Flight
+]
+-}

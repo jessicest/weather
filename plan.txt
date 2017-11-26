@@ -1,0 +1,59 @@
+
+First things first, I'm looking at requirement 2, because that seems to be the one that will drive the design:
+
+We need to be able to scan a file full of observations, then produce the following:
+
+>     The minimum temperature.
+No problem, this is trivial. We can scan this in O(n) time and O(1) memory.
+
+>     The maximum temperature.
+No problem, this is trivial. We can scan this in O(n) time and O(1) memory.
+
+>     The mean temperature.
+We can do this. We just need to find the sum of all temperatures, and the number of observations in the file. Both of these can be found with an O(n) time and O(1) space scan.
+
+>     The number of observations from each observatory.
+No problem. O(n) time and O(k) space, where k is the number of distinct observatories. I _assume_ that this won't be a space problem.
+
+>     The total distance travelled.
+Ahhhhh now this is harder.
+Let's dig into the details here.
+
+> There is a weather balloon traversing the globe, periodically taking observations. At each observation, the balloon records the temperature and its current location.
+
+> the location is a co-ordinate x,y. And x, and y are natural numbers in observatory specific units.
+
+> Data from the balloon often comes in large batches, so assume you may need to deal with data that doesn't fit in memory.
+
+> Data from the balloon does not necessarily arrive in order.
+
+So, first: let's assume that the balloon is travelling on a 2 dimensional bounded grid. (Such as: longitude/latitude over a constrained area, such as a single city.)
+With this assumption, the way to find total distance will be: find the distance between each successive pair of observations, then sum them all. (Distance between two observations is sqrt(x*x + y*y).)
+
+This algorithm _would be_ O(n) time and O(1) space, but:
+
+Problem 1: The data isn't necessarily in order. This means that it needs to be indexed or sorted before we can calculate distances between consecutive observations.
+This means we need to sort or index the data. That's going to cost at least O(n log n) time, and at least O(n) space (to load all of the data in memory)... but,
+
+Problem 2: The data doesn't fit in memory. This means we can't run in-memory sort algorithms. We need to index the data while it's on disk. Roughly, the options I can see are:
+ - Databases
+ - Apache Lucene (for indexing it without adding it to a database)
+ - Split the input file into multiple sorted files (and optionally merge them afterwards)
+
+With one of these in play, we can then do one of the following:
+ parse -> created indexed filesystem entries -> iterate through the entries -> sum the position differences
+
+That should work.
+
+However, we then hit...
+Problem 3: what does an x,y position even mean?
+The weather balloon is *traversing the globe*. I'm not aware of an x,y coordinate system with natural numbers that can handle this case. If Earth was a torus instead of a spheroid, then it might work...
+
+For now, I'm going to *ignore* this problem simply because I cannot see a way that this could be resolved. But it would come up during the first code review.
+
+
+The good news is:
+ - the location formula can be revised later
+ - all of the code that works on too-large-for-memory datasets is just an extension of the code that works on in-memory datasets.
+
+Therefore, my initial approach to all of the above problems will be to *ignore* them and just work on in-memory data.
