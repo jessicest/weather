@@ -1,8 +1,6 @@
 
 module FlightData where
 
-import qualified Data.Text as T
-import Data.Text(Text)
 import qualified Data.Map as Map
 import Data.Map(Map(..))
 import Data.Time(UTCTime)
@@ -10,19 +8,13 @@ import Data.Time(UTCTime)
 type Timestamp = UTCTime
 data Location = Location Double Double -- x, y position in meters
 type Temperature = Double -- temperature in degrees kelvin
-data ObservatoryID = ObservatoryID Text deriving (Eq, Show, Ord)
+data ObservatoryID = ObservatoryID String deriving (Eq, Show, Ord)
 data Observation = Observation {
   timestamp :: Timestamp,
   location :: Location,
   temperature :: Temperature,
   observatoryID :: ObservatoryID
   }
-
--- input: the log file as described in the requirements
--- output 1: a list of entries that could not be parsed
--- output 2: a list of observations that were successfully parsed
-parseFlightLog :: Text -> ([Text], [Observation])
-parseFlightLog = undefined
 
 -- for these functions, we are *trying* to take advantage of laziness,
 -- so that we can write code without dealing with the requirement that
