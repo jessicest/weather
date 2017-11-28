@@ -4,7 +4,7 @@ module ObservationParser where
 import Text.ParserCombinators.ReadP
 import FlightData
 import Data.Time
-import Data.Char(isDigit)
+import Data.Char
 import Control.Applicative
 
 -- example input
@@ -28,15 +28,15 @@ parseLocation = do
   x <- double
   char ','
   y <- double
-  return $ Location x y
+  pure $ Location x y
 
 parseTemperature :: ReadP Temperature
 parseTemperature = double
 
 parseObservatoryID :: ReadP ObservatoryID
 parseObservatoryID = do
-  string <- many1 (satisfy (\char -> char >= 'A' && char <= 'Z'))
-  return $ ObservatoryID string
+  string <- many1 (satisfy isAsciiUpper)
+  pure $ ObservatoryID string
 
 parseObservation :: ReadP Observation
 parseObservation = do
@@ -47,7 +47,7 @@ parseObservation = do
   temperature <- parseTemperature
   char '|'
   observatoryID <- parseObservatoryID
-  return Observation {
+  pure Observation {
       timestamp = timestamp,
       location = location,
       temperature = temperature,
