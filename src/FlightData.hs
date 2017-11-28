@@ -5,8 +5,9 @@ import qualified Data.Text as T
 import Data.Text(Text)
 import qualified Data.Map as Map
 import Data.Map(Map(..))
+import Data.Time(UTCTime)
 
-data Timestamp = Timestamp Integer -- we'll clarify this one later
+type Timestamp = UTCTime
 data Location = Location Double Double -- x, y position in meters
 type Temperature = Double -- temperature in degrees kelvin
 data ObservatoryID = ObservatoryID Text deriving (Eq, Show, Ord)
@@ -16,9 +17,6 @@ data Observation = Observation {
   temperature :: Temperature,
   observatoryID :: ObservatoryID
   }
-
-parseObservation :: Text -> Either Text Observation
-parseObservation = undefined
 
 -- input: the log file as described in the requirements
 -- output 1: a list of entries that could not be parsed
