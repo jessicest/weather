@@ -1,6 +1,7 @@
 
 module Generator where
 
+import Control.Monad
 import System.Random
 
   -- example output
@@ -71,5 +72,21 @@ generateObservationString = concat <$> sequence [
   observatoryID
   ]
 
-generateAndWriteObservationsToFile :: Int -> String -> IO ()
-generateAndWriteObservationsToFile = undefined
+-- given 2 ways to generate strings, return a mixture of both
+intermix :: Int -> Double -> IO String -> IO String -> IO [String]
+intermix numEntries chance leftGenerator rightGenerator
+  = replicateM numEntries generate
+  where generate = do
+          number <- randomRIO (0, 1)
+          if number < chance
+             then leftGenerator
+             else rightGenerator
+
+generateUnreliableObservations :: Int -> Double -> IO String
+generateUnreliableObservations numEntries errorChance
+  = unlines <$> intermix numEntries errorChance generateError generateObservationString
+    where generateError = pure "bad data" -- TODO: we could make this more elaborate
+
+generateAndWriteObservationsToFile :: Int -> Double -> FilePath -> IO ()
+generateAndWriteObservationsToFile numEntries errorChance filename
+  = generateUnreliableObservations numEntries errorChance >>= writeFile filename
