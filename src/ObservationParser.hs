@@ -74,3 +74,8 @@ tryParse reader input = case parseResult of
     (result:results) -> Right (fst result)
   where parseResult = readP_to_S reader input & filter fullyParsed
         fullyParsed (a, string) = null string
+
+parseFromFile :: FilePath -> IO ([String], [Observation])
+parseFromFile filename = do
+  contents <- readFile filename
+  pure (parseFlightLog contents)
