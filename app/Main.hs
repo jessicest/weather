@@ -22,7 +22,7 @@ processParsedData errorFilename results = do
   displayStats (snd results)
 
 dumpErrors :: FilePath -> [String] -> IO ()
-dumpErrors filename strings = writeFile filename (unlines strings)
+dumpErrors filename strings = appendFile filename (unlines strings)
 
 displayStats :: [Observation] -> IO ()
 displayStats observations = do
