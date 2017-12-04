@@ -43,3 +43,10 @@ tempUnitsOf :: ObservatoryID -> TemperatureUnits
 tempUnitsOf (ObservatoryID "AU") = Celsius
 tempUnitsOf (ObservatoryID "US") = Fahrenheit
 tempUnitsOf _ = Kelvin
+
+normalizeObservation :: Observation -> Observation
+normalizeObservation observation@(Observation _ location temperature _)
+  = observation {
+      location = normalizeLocation location,
+      temperature = normalizeTemperature temperature
+      }

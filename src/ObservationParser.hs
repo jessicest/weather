@@ -46,6 +46,7 @@ parseObservation = do
   temperature <- parseTemperature
   char '|'
   observatoryID <- parseObservatoryID
+  eof -- we need this to make sure observatoryID is greedy
   pure Observation {
       timestamp = timestamp,
       location = Location (distanceUnitsOf observatoryID) x y,

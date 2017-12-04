@@ -13,6 +13,7 @@ import ObservationParser
 import ObservationSerializer
 import Data.Time
 import Data.Function
+import Control.Applicative
 
 {-
 main =
@@ -36,6 +37,11 @@ roughlyEqual lhs rhs = (lhs * 1000 & round) == (rhs * 1000 & round)
 -- convenience function. A temperature when we don't care what temperature
 defaultTemperature :: Temperature
 defaultTemperature = Temperature Kelvin 333333
+
+-- Control.Applicative only goes up to liftA3 apparently :(
+-- so we need to roll our own
+liftA4 :: Applicative f => (a -> b -> c -> d -> e) -> f a -> f b -> f c -> f d -> f e
+liftA4 func fa fb fc fd = func <$> fa <*> fb <*> fc <*> fd
 
 generateUTCTimeBetween :: UTCTime -> UTCTime -> Gen UTCTime
 generateUTCTimeBetween start end = do
@@ -70,6 +76,18 @@ instance Arbitrary Observation where
     temperature <- generateTemperature observatoryID
     pure $ Observation timestamp location temperature observatoryID
 
+  shrink o
+    = drop 1
+     $ liftA4
+       Observation
+       (shrink2 $ timestamp o)
+       (shrinkLocation $ location o)
+       (shrinkTemperature $ temperature o)
+       [observatoryID o]
+      where shrink2 a = a : shrink a
+            shrinkLocation location@(Location units x y) = liftA2 (Location units) (shrink2 x) (shrink2 y)
+            shrinkTemperature temperature@(Temperature units value) = Temperature units <$> shrink value
+
 instance Arbitrary ObservatoryID where
   arbitrary = elements ["AU", "US", "FR", "XX"] <&> ObservatoryID
 
@@ -81,7 +99,7 @@ main = hspec $ do
         let string = serializeObservation observation
             newObservations = readP_to_S parseObservation string
         in case newObservations of
-          ((newObservation,_):[]) -> observation == newObservation
+          (newObservation,_) : [] -> normalizeObservation observation == normalizeObservation newObservation
           _ -> False
 
   describe "Stats" $ do
