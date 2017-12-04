@@ -46,10 +46,16 @@ instance RoughEquality Double where
 
 instance RoughEquality Observation where
   roughlyEqual lhs rhs
-    = timestamp lhs =!= timestamp rhs
+    = roughlyEqual (timestamp lhs) (timestamp rhs)
     && roughlyEqual (location lhs) (location rhs)
     && roughlyEqual (temperature lhs) (temperature rhs)
     && observatoryID lhs =!= observatoryID rhs
+
+instance RoughEquality UTCTime where
+  roughlyEqual (UTCTime date1 time1) (UTCTime date2 time2)
+    = date1 =!= date2
+    && truncateToMinute time1 =!= truncateToMinute time2
+    where truncateToMinute = (`div` 60000000000000) . diffTimeToPicoseconds
 
 instance RoughEquality Location where
   roughlyEqual lhs rhs
