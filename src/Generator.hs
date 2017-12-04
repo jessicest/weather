@@ -13,16 +13,18 @@ import ObservationSerializer
   -- example output
   -- 2014-12-31T13:44|10,5|243|AU
 
--- unfortunately i have to copy/paste this code from the quickcheck implementations because i'm not really clear if i can write one algorithm that works with both RandomGen and Gen
+-- unfortunately i have to copy/paste this code from the quickcheck implementations
+-- because i'm not really clear if the appropriate type classes exist so that i
+--  can write one algorithm that works with both RandomGen and Gen
 
-generateUTCTimeBetween :: (RandomGen g) => (UTCTime, UTCTime) -> g -> (UTCTime, g)
-generateUTCTimeBetween (start, end) gen =
+randomUTCTimeBetween :: (RandomGen g) => (UTCTime, UTCTime) -> g -> (UTCTime, g)
+randomUTCTimeBetween (start, end) gen =
   let range = diffUTCTime end start & truncate :: Integer
       (numSecs, newGen) = randomR (0, range) gen
   in (addUTCTime (fromIntegral numSecs) start, newGen)
 
 instance Random UTCTime where
-  randomR = generateUTCTimeBetween
+  randomR = randomUTCTimeBetween
   random = randomR (start, end)
     where start = parseTimeOrError True defaultTimeLocale "%F" "1911-01-01"
           end   = parseTimeOrError True defaultTimeLocale "%F" "2111-12-31"

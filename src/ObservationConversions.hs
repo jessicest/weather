@@ -18,6 +18,11 @@ convertLocation targetUnits location@(Location sourceUnits x y)
 normalizeLocation :: Location -> Location
 normalizeLocation = convertLocation Meters
 
+distanceUnitsOf :: ObservatoryID -> DistanceUnits
+distanceUnitsOf (ObservatoryID "US") = Miles
+distanceUnitsOf (ObservatoryID "FR") = Meters
+distanceUnitsOf _ = Kilometers
+
 convertTemperature :: TemperatureUnits -> Temperature -> Temperature
 convertTemperature targetUnits temperature@(Temperature sourceUnits value)
   = case sourceUnits of
@@ -33,3 +38,8 @@ convertTemperature targetUnits temperature@(Temperature sourceUnits value)
 
 normalizeTemperature :: Temperature -> Temperature
 normalizeTemperature = convertTemperature Kelvin
+
+tempUnitsOf :: ObservatoryID -> TemperatureUnits
+tempUnitsOf (ObservatoryID "AU") = Celsius
+tempUnitsOf (ObservatoryID "US") = Fahrenheit
+tempUnitsOf _ = Kelvin

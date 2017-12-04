@@ -9,6 +9,7 @@ import Data.Function
 -- i suppose we could import this from Control.Lens.Operator but it seems a bit
 -- heavyweight for just this purpose
 -- *grumble* why isn't this in Data.Function anyway
+-- Anyway, this doesn't really belong here -- we should move it out to a generic Utils module
 (<&>) :: (Functor f) => f a -> (a -> b) -> f b
 a <&> b = b <$> a
 

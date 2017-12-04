@@ -7,6 +7,7 @@ import Data.Time
 import Data.Char
 import Control.Applicative
 import Data.Function
+import ObservationConversions
 
 -- example input
 -- 2014-12-31T13:44|10,5|243|AU
@@ -47,20 +48,10 @@ parseObservation = do
   observatoryID <- parseObservatoryID
   pure Observation {
       timestamp = timestamp,
-      location = Location (chooseDistanceUnits observatoryID) x y,
-      temperature = Temperature (chooseTempUnit observatoryID) temperature,
+      location = Location (distanceUnitsOf observatoryID) x y,
+      temperature = Temperature (tempUnitsOf observatoryID) temperature,
       observatoryID = observatoryID
       }
-
-chooseDistanceUnits :: ObservatoryID -> DistanceUnits
-chooseDistanceUnits (ObservatoryID "US") = Miles
-chooseDistanceUnits (ObservatoryID "FR") = Meters
-chooseDistanceUnits _ = Kilometers
-
-chooseTempUnit :: ObservatoryID -> TemperatureUnits
-chooseTempUnit (ObservatoryID "AU") = Celsius
-chooseTempUnit (ObservatoryID "US") = Fahrenheit
-chooseTempUnit _ = Kelvin
 
 -- input: the log file as described in the requirements
 -- output 1: a list of entries that could not be parsed
