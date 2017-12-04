@@ -54,12 +54,7 @@ randomObservation = do
   location <- getStdRandom randomLocation
   temperature <- getStdRandom randomTemperature
   observatoryID <- getStdRandom randomObservatoryID
-  pure Observation {
-           timestamp = timestamp,
-           location = location,
-           temperature = temperature,
-           observatoryID = observatoryID
-           }
+  pure $ Observation timestamp location temperature observatoryID
 
 randomElement :: (RandomGen g) => [a] -> g -> (a, g)
 randomElement [] _ = error "can't choose randomElement from empty list"

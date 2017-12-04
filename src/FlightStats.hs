@@ -1,6 +1,7 @@
 module FlightStats where
 
 import FlightData
+import ObservationConversions
 import qualified Data.Map as Map
 import Data.Map(Map(..))
 import Data.Time
@@ -12,17 +13,14 @@ import Data.List
 -- the data won't necessarily fit in memory.
 
 flightMinTemperature :: [Observation] -> Temperature
-flightMinTemperature = minimum . map temperature
+flightMinTemperature = minimum . map (normalizeTemperature . temperature)
 
 flightMaxTemperature :: [Observation] -> Temperature
-flightMaxTemperature = maximum . map temperature
+flightMaxTemperature = maximum . map (normalizeTemperature . temperature)
 
 flightMeanTemperature :: [Observation] -> Double
-flightMeanTemperature observations
-  | allTheSame (map tUnits temperatures) = average $ map tValue temperatures
-  | otherwise = error "can't calculate mean unless all units are the same"
-  where temperatures = map temperature observations
-        allTheSame xs = and $ zipWith (==) xs (drop 1 xs)
+flightMeanTemperature observations = average $ map tValue temperatures
+  where temperatures = map (normalizeTemperature . temperature) observations
 
 flightNumObservationsPerObservatory :: [Observation] -> Map ObservatoryID Integer
 flightNumObservationsPerObservatory = foldr incrementObservation Map.empty . map observatoryID
@@ -31,10 +29,10 @@ flightNumObservationsPerObservatory = foldr incrementObservation Map.empty . map
 flightTotalDistanceTravelled :: [Observation] -> Double
 flightTotalDistanceTravelled [] = 0
 flightTotalDistanceTravelled observations = sum $ zipWith distance locations (tail locations)
-  where locations = sortedObservations & map location
+  where locations = sortedObservations & map (normalizeLocation . location)
         sortedObservations = sortBy (\obs1 obs2 -> compare (timestamp obs1) (timestamp obs2)) observations
 
--- i don't think this will work on too-large-for-memory lists. Needs checking and probably rewriting
+-- this isn't efficient because it walks the lists twice (so it can't do list fusion). needs rewriting
 average :: [Double] -> Double
 average [] = error "can't produce the average of an empty list" -- TODO: make sure our tests cover this case
 average nums = sum nums / fromIntegral (length nums)
