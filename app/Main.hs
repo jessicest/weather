@@ -1,6 +1,7 @@
 module Main where
 
 import FlightData
+import FlightStats
 import Generator
 import ObservationParser
 import System.Environment

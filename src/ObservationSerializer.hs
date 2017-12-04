@@ -13,7 +13,7 @@ serializeObservation observation
   ++ "|"
   ++ serializeLocation (location observation)
   ++ "|"
-  ++ show (temperature observation)
+  ++ serializeTemperature (temperature observation)
   ++ "|"
   ++ serializeObservatoryID (observatoryID observation)
 
@@ -21,7 +21,10 @@ serializeTimestamp :: Timestamp -> String
 serializeTimestamp = formatTime defaultTimeLocale "%FT%R"
 
 serializeLocation :: Location -> String
-serializeLocation (Location x y) = show x ++ "," ++ show y
+serializeLocation (Location _ x y) = show x ++ "," ++ show y
+
+serializeTemperature :: Temperature -> String
+serializeTemperature (Temperature _ value) = show value
 
 serializeObservatoryID :: ObservatoryID -> String
 serializeObservatoryID (ObservatoryID name) = name

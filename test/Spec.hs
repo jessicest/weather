@@ -8,6 +8,7 @@ import Control.Exception (evaluate)
 import FlightData
 import Text.ParserCombinators.ReadP
 import ObservationParser
+import ObservationSerializer
 import Data.Time
 import Data.Function
 import System.Random
@@ -50,7 +51,7 @@ main = hspec $ do
     it "returns the same object after serialising then parsing" $ do
       property $ \time loc temp obs ->
         let observation = Observation { timestamp = time, location = loc, temperature = temp, observatoryID = obs }
-            string = observationToString observation
+            string = serializeObservation observation
             newObservations = readP_to_S parseObservation string
         in case newObservations of
           ((newObservation,_):[]) -> observation == newObservation

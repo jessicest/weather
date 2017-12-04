@@ -21,14 +21,14 @@ double = many1 (char '-' <|> char '.' <|> digit) <&> read
 parseTimestamp :: ReadP UTCTime
 parseTimestamp = readPTime True defaultTimeLocale "%FT%R" -- time format: yyyy-MM-ddThh:mm
 
-parseLocation :: ReadP Location
+parseLocation :: ReadP (Double, Double)
 parseLocation = do
   x <- double
   char ','
   y <- double
-  pure $ Location x y
+  pure $ (x, y)
 
-parseTemperature :: ReadP Temperature
+parseTemperature :: ReadP Double
 parseTemperature = double
 
 parseObservatoryID :: ReadP ObservatoryID
@@ -40,17 +40,27 @@ parseObservation :: ReadP Observation
 parseObservation = do
   timestamp <- parseTimestamp
   char '|'
-  location <- parseLocation
+  (x, y) <- parseLocation
   char '|'
   temperature <- parseTemperature
   char '|'
   observatoryID <- parseObservatoryID
   pure Observation {
       timestamp = timestamp,
-      location = location,
-      temperature = temperature,
+      location = Location (chooseDistanceUnits observatoryID) x y,
+      temperature = Temperature (chooseTempUnit observatoryID) temperature,
       observatoryID = observatoryID
       }
+
+chooseDistanceUnits :: ObservatoryID -> DistanceUnits
+chooseDistanceUnits (ObservatoryID "US") = Miles
+chooseDistanceUnits (ObservatoryID "FR") = Meters
+chooseDistanceUnits _ = Kilometers
+
+chooseTempUnit :: ObservatoryID -> TemperatureUnits
+chooseTempUnit (ObservatoryID "AU") = Celsius
+chooseTempUnit (ObservatoryID "US") = Fahrenheit
+chooseTempUnit _ = Kelvin
 
 -- input: the log file as described in the requirements
 -- output 1: a list of entries that could not be parsed
