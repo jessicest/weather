@@ -29,6 +29,10 @@ main =
 parseDate :: String -> UTCTime
 parseDate = parseTimeOrError False defaultTimeLocale "%F"
 
+-- helpful for matching against doubles and floats
+roughlyEqual :: (RealFrac a) => a -> a -> Bool
+roughlyEqual lhs rhs = (lhs * 1000 & round) == (rhs * 1000 & round)
+
 -- convenience function. A temperature when we don't care what temperature
 defaultTemperature :: Temperature
 defaultTemperature = Temperature Kelvin 333333
@@ -82,16 +86,27 @@ main = hspec $ do
 
   describe "Stats" $ do
     it "can calculate distance across unit types" $ do
-      flightTotalDistanceTravelled observations1 `shouldBe` 5009
+      flightTotalDistanceTravelled observations1 `shouldSatisfy` (roughlyEqual 2046.6999)
     it "can calculate distance with un-ordered observations" $ do
-      flightTotalDistanceTravelled observations2 `shouldBe` 6000
+      flightTotalDistanceTravelled observations2 `shouldSatisfy` (roughlyEqual 6000)
+    it "can calculate distance along diagonals" $ do
+      flightTotalDistanceTravelled observations3 `shouldSatisfy` (roughlyEqual 10.198)
+    it "auto-converts kilometer results to meters" $ do
+      flightTotalDistanceTravelled observations4 `shouldSatisfy` (roughlyEqual 4000)
         where observations1 = [
-                Observation (parseDate "2001-01-01") (Location Kilometers 5 5) defaultTemperature (ObservatoryID "AU"),
-                Observation (parseDate "2001-02-01") (Location Meters 5000 6000) defaultTemperature (ObservatoryID "FR"),
-                Observation (parseDate "2001-03-01") (Location Miles 5 5) defaultTemperature (ObservatoryID "US")
+                Observation (parseDate "2001-02-01") (Location Meters 0 6000) defaultTemperature (ObservatoryID "FR"),
+                Observation (parseDate "2001-03-01") (Location Miles  0    5) defaultTemperature (ObservatoryID "US")
                 ]
               observations2 = [
                 Observation (parseDate "2500-01-01") (Location Meters 3000 1000) defaultTemperature (ObservatoryID "FR"),
                 Observation (parseDate "1200-02-01") (Location Meters 5000 1000) defaultTemperature (ObservatoryID "FR"),
                 Observation (parseDate "1950-03-01") (Location Meters 1000 1000) defaultTemperature (ObservatoryID "FR")
+                ]
+              observations3 = [
+                Observation (parseDate "2035-01-01") (Location Meters (-2) 8) defaultTemperature (ObservatoryID "FR"),
+                Observation (parseDate "2035-01-02") (Location Meters   8 10) defaultTemperature (ObservatoryID "FR")
+                ]
+              observations4 = [
+                Observation (parseDate "2035-01-01") (Location Kilometers 9 9) defaultTemperature (ObservatoryID "AU"),
+                Observation (parseDate "2035-01-02") (Location Kilometers 9 5) defaultTemperature (ObservatoryID "AU")
                 ]
