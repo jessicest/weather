@@ -23,12 +23,11 @@ main =
     print $ formatTime defaultTimeLocale "%m/%d/%Y %I:%M %p" timeFromString
 -}
 
-
-generateUTCTimeBetween :: UTCTime -> UTCTime -> IO UTCTime
+generateUTCTimeBetween :: UTCTime -> UTCTime -> Gen UTCTime
 generateUTCTimeBetween start end = do
   let range = diffUTCTime end start
   let rangeInSeconds = range & truncate :: Integer
-  numSecs <- randomRIO (0, rangeInSeconds)
+  numSecs <- choose (0, rangeInSeconds)
   pure $ addUTCTime (fromIntegral numSecs) start
 
 instance Arbitrary UTCTime where
@@ -36,9 +35,14 @@ instance Arbitrary UTCTime where
     where start = parseTimeOrError True defaultTimeLocale "%F" "1911-01-01"
           end   = parseTimeOrError True defaultTimeLocale "%F" "2111-12-31"
 
+instance Arbitrary Location where
+  arbitrary = do
+    x <- choose (-10000, 10000)
+    y <- choose (-10000, 10000)
+    pure $ Location x y
 
-instance Arbitrary Location
-instance Arbitrary ObservatoryID
+instance Arbitrary ObservatoryID where
+  arbitrary = elements ["AU", "US", "FR", "XX"] <&> ObservatoryID
 
 main :: IO ()
 main = hspec $ do
