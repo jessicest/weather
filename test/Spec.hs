@@ -137,6 +137,14 @@ main = hspec $ do
       cruft `shouldBe` ""
       normalizeObservation newObservation `shouldSatisfy` roughlyEqual (normalizeObservation observation)
 
+    it "fails to parse impossible month value" $ do
+      let observation = Observation (parseDate "1929-09-05") (Location Kilometers 2771.7835186020893 0.0) (Temperature Kelvin 0.0) (ObservatoryID "XX")
+      let string = serializeObservation observation
+      let string2 = take 5 string ++ "33" ++ drop 7 string
+      take 10 string2 `shouldBe` "1929-33-05" -- just double-checking that we hacked the string correctly!
+      let result = readP_to_S parseObservation string2
+      length result `shouldBe` 0
+
     it "returns the same object after serialising then parsing (quickcheck)" $ do
       property $ \observation ->
         let string = serializeObservation observation
