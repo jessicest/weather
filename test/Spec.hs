@@ -26,13 +26,41 @@ main =
     print $ formatTime defaultTimeLocale "%m/%d/%Y %I:%M %p" timeFromString
 -}
 
+-- an equality function, but we raise an error
+-- so that in addition to a failed test we get extra info about what's not equal
+(=!=) :: (Show a, Eq a) => a -> a -> Bool
+a =!= b = if a == b
+            then True
+            else error $ show a ++ " =!= " ++ show b
+
 -- convenience function. parse a date in format "YYYY-mm-dd"
 parseDate :: String -> UTCTime
 parseDate = parseTimeOrError False defaultTimeLocale "%F"
 
--- helpful for matching against doubles and floats
-roughlyEqual :: (RealFrac a) => a -> a -> Bool
-roughlyEqual lhs rhs = (lhs * 1000 & round) == (rhs * 1000 & round)
+-- helpful for matching doubles and floats
+class RoughEquality a where
+  roughlyEqual :: a -> a -> Bool
+
+instance RoughEquality Double where
+  roughlyEqual lhs rhs = (lhs * 1000 & round) =!= (rhs * 1000 & round)
+
+instance RoughEquality Observation where
+  roughlyEqual lhs rhs
+    = timestamp lhs =!= timestamp rhs
+    && roughlyEqual (location lhs) (location rhs)
+    && roughlyEqual (temperature lhs) (temperature rhs)
+    && observatoryID lhs =!= observatoryID rhs
+
+instance RoughEquality Location where
+  roughlyEqual lhs rhs
+    = lUnits lhs =!= lUnits rhs
+    && roughlyEqual (lx lhs) (lx rhs)
+    && roughlyEqual (ly lhs) (ly rhs)
+
+instance RoughEquality Temperature where
+  roughlyEqual lhs rhs
+    = tUnits lhs =!= tUnits rhs
+    && roughlyEqual (tValue lhs) (tValue rhs)
 
 -- convenience function. A temperature when we don't care what temperature
 defaultTemperature :: Temperature
@@ -94,12 +122,21 @@ instance Arbitrary ObservatoryID where
 main :: IO ()
 main = hspec $ do
   describe "Serialising and parsing" $ do
-    it "returns the same object after serialising then parsing" $ do
+    it "returns the same object after serialising then parsing (hspec)" $ do
+      let observation = Observation (parseDate "1929-09-05") (Location Kilometers 2771.7835186020893 0.0) (Temperature Kelvin 0.0) (ObservatoryID "XX")
+      let string = serializeObservation observation
+      let result = readP_to_S parseObservation string
+      length result `shouldBe` 1
+      let (newObservation, cruft) = head result
+      cruft `shouldBe` ""
+      normalizeObservation newObservation `shouldSatisfy` roughlyEqual (normalizeObservation observation)
+
+    it "returns the same object after serialising then parsing (quickcheck)" $ do
       property $ \observation ->
         let string = serializeObservation observation
             newObservations = readP_to_S parseObservation string
         in case newObservations of
-          (newObservation,_) : [] -> normalizeObservation observation == normalizeObservation newObservation
+          (newObservation,_) : [] -> roughlyEqual (normalizeObservation observation) (normalizeObservation newObservation)
           _ -> False
 
   describe "Stats" $ do
