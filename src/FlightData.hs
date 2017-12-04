@@ -17,7 +17,11 @@ data TemperatureUnits = Kelvin | Celsius | Fahrenheit deriving (Eq, Show)
 
 type Timestamp = UTCTime
 
-data Location = Location DistanceUnits Double Double deriving (Eq, Show)
+data Location = Location {
+  lUnits :: DistanceUnits,
+  lx :: Double,
+  ly :: Double
+  } deriving (Eq, Show)
 
 data Temperature = Temperature {
   tUnits :: TemperatureUnits,
@@ -26,7 +30,7 @@ data Temperature = Temperature {
 
 instance Ord Temperature where
   compare temp1 temp2
-    | tUnits temp1 /= tUnits temp2 = error "not implemented: cross-unit comparisons!"
+    | tUnits temp1 /= tUnits temp2 = error $ "not implemented: cross-unit comparisons! " ++ show (tUnits temp1) ++ " vs " ++ show (tUnits temp2)
     | otherwise = compare (tValue temp1) (tValue temp2)
 
 data ObservatoryID = ObservatoryID String deriving (Eq, Show, Ord)

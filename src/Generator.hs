@@ -27,14 +27,15 @@ instance Random UTCTime where
     where start = parseTimeOrError True defaultTimeLocale "%F" "1911-01-01"
           end   = parseTimeOrError True defaultTimeLocale "%F" "2111-12-31"
 
-instance Random Location where
-  randomR (Location units0 x0 y0, Location units1 x1 y1) gen0
-    = if units0 == units1
-        then (Location units0 x y, gen2)
-        else error "Unit mismatch in Location.randomR"
-    where (x, gen1) = randomR (x0, x1) gen0
-          (y, gen2) = randomR (y0, y1) gen1
-  random = randomR (Location Meters (-10000) (-10000), Location Meters 10000 10000)
+randomLocation :: (RandomGen g) => g -> (Location, g)
+randomLocation gen0
+  = let (x, gen1) = randomR (-10000, 10000) gen0
+        (y, gen2) = randomR (-10000, 10000) gen1
+    in (Location {
+          lUnits = Meters,
+          lx = x,
+          ly = y
+          }, gen2)
 
 randomTemperature :: (RandomGen g) => g -> (Temperature, g)
 randomTemperature gen = randomR (-10000, 10000) gen & first (Temperature Kelvin)
@@ -50,9 +51,9 @@ randomObservatoryID gen = randomElement ["AU", "US", "FR", "XX"] gen & first Obs
 randomObservation :: IO Observation
 randomObservation = do
   timestamp <- randomIO
-  location <- randomIO
+  location <- getStdRandom randomLocation
   temperature <- getStdRandom randomTemperature
-  observatoryID <- getStdRandom randomObservatoryID -- phew, getStdRandom exists so i can maintain my hack
+  observatoryID <- getStdRandom randomObservatoryID
   pure Observation {
            timestamp = timestamp,
            location = location,
