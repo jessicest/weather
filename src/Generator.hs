@@ -1,76 +1,62 @@
 
 module Generator where
 
+import Data.Function
+import FlightData
 import Control.Monad
 import System.Random
+import Data.Time
+import Data.Char
+import Data.Bifunctor
+import ObservationSerializer
 
   -- example output
   -- 2014-12-31T13:44|10,5|243|AU
 
-digit :: IO Char
-digit = randomRIO ('0', '9')
+-- unfortunately i have to copy/paste this code from the quickcheck implementations because i'm not really clear if i can write one algorithm that works with both RandomGen and Gen
 
-uppercase :: IO Char
-uppercase = randomRIO ('A', 'Z')
+generateUTCTimeBetween :: (RandomGen g) => (UTCTime, UTCTime) -> g -> (UTCTime, g)
+generateUTCTimeBetween (start, end) gen =
+  let range = diffUTCTime end start & truncate :: Integer
+      (numSecs, newGen) = randomR (0, range) gen
+  in (addUTCTime (fromIntegral numSecs) start, newGen)
 
--- generate a random date string
--- todo: if we can find the haskell functions to convert an epoch timestamp to a
---  haskell date/time format such as UTCTime,
---  that would be a much simpler way to generate a date/time,
---  and it would allow us to safely generate the 31st of a month, too.
--- note: this won't pad the digits, but it probably shouldn't matter too much
-date :: IO String
-date = concat <$> sequence [
-  show <$> randomRIO (1900, 2100 :: Int),
-  pure "-",
-  show <$> randomRIO (1, 12 :: Int),
-  pure "-",
-  show <$> randomRIO (1, 28 :: Int)
-  ]
+instance Random UTCTime where
+  randomR = generateUTCTimeBetween
+  random = randomR (start, end)
+    where start = parseTimeOrError True defaultTimeLocale "%F" "1911-01-01"
+          end   = parseTimeOrError True defaultTimeLocale "%F" "2111-12-31"
 
-  -- note: this won't pad the digits, but it probably shouldn't matter too much
-time :: IO String
-time = concat <$> sequence [
-  show <$> randomRIO (0, 23 :: Int),
-  pure ":",
-  show <$> randomRIO (0, 59 :: Int)
-  ]
+instance Random Location where
+  randomR (Location x0 y0, Location x1 y1) gen0 = (Location x y, gen2)
+    where (x, gen1) = randomR (x0, x1) gen0
+          (y, gen2) = randomR (y0, y1) gen1
+  random = randomR (Location (-10000) (-10000), Location 10000 10000)
 
-datetime :: IO String
-datetime = concat <$> sequence [
-  date,
-  pure "T",
-  time
-  ]
+randomObservatoryID :: (RandomGen g) => g -> (ObservatoryID, g)
+randomObservatoryID gen = randomElement ["AU", "US", "FR", "XX"] gen & first ObservatoryID
 
-location :: IO String
-location = do
-  x <- randomRIO (-1000.0, 1000.0 :: Double)
-  y <- randomRIO (-1000.0, 1000.0 :: Double)
-  pure $ show x ++ "," ++ show y
+-- Observation isn't an instance of Random because randomR would be a hassle to implement
+-- (also because it would be confusing/weird for the user)
 
-temperature :: IO String
-temperature = show <$> randomRIO (-1000.0, 1000.0 :: Double) -- these are probably too large to be realistic but it's ok because the system should be able to handle it anyway
+-- IO is simpler than RandomGen so we'll just be lazy and make this IO for now...
+-- will refactor to use RandomGen if it's a blocker for something
+randomObservation :: IO Observation
+randomObservation = do
+  timestamp <- randomIO
+  location <- randomIO
+  temperature <- randomIO
+  observatoryID <- getStdRandom randomObservatoryID -- phew, getStdRandom exists so i can maintain my hack
+  pure Observation {
+           timestamp = timestamp,
+           location = location,
+           temperature = temperature,
+           observatoryID = observatoryID
+           }
 
-observatoryID :: IO String
-observatoryID = chooseRandomElement ["AU", "US", "FR", "XX"]
-
-chooseRandomElement :: [a] -> IO a
-chooseRandomElement [] = error "you can't chooseRandomElement on an empty list"
-chooseRandomElement list = do
-  index <- randomRIO (1, length list)
-  pure (list !! (index - 1))
-
-generateObservationString :: IO String
-generateObservationString = concat <$> sequence [
-  datetime,
-  pure "|",
-  location,
-  pure "|",
-  temperature,
-  pure "|",
-  observatoryID
-  ]
+randomElement :: (RandomGen g) => [a] -> g -> (a, g)
+randomElement [] _ = error "can't choose randomElement from empty list"
+randomElement list gen = randomR (0, length list - 1) gen & first (list !!)
 
 -- given 2 ways to generate strings, return a mixture of both
 intermix :: Int -> Double -> IO String -> IO String -> IO [String]
@@ -84,8 +70,9 @@ intermix numEntries chance leftGenerator rightGenerator
 
 generateUnreliableObservations :: Int -> Double -> IO String
 generateUnreliableObservations numEntries errorChance
-  = unlines <$> intermix numEntries errorChance generateError generateObservationString
-    where generateError = pure "bad data" -- TODO: we could make this more elaborate
+  = unlines <$> intermix numEntries errorChance generateError generateValid
+    where generateError = pure "bad data" -- TODO: we could make this more elaborate, to test almost-valid strings
+          generateValid = randomObservation <&> serializeObservation
 
 generateAndWriteObservationsToFile :: Int -> Double -> FilePath -> IO ()
 generateAndWriteObservationsToFile numEntries errorChance filename
