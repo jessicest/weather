@@ -6,12 +6,10 @@ import FlightData
 import Data.Time
 import Data.Char
 import Control.Applicative
+import Data.Function
 
 -- example input
 -- 2014-12-31T13:44|10,5|243|AU
-
-(<&>) = flip (<$>)
-(&) = flip ($)
 
 digit :: ReadP Char
 digit = satisfy isDigit

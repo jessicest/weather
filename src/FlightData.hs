@@ -3,10 +3,14 @@ module FlightData where
 
 import qualified Data.Map as Map
 import Data.Map(Map(..))
-import Data.Time(UTCTime)
+import Data.Time
+import Data.Function
+
+(<&>) :: (Functor f) => f a -> (a -> b) -> f b
+(<&>) = flip (<$>)
 
 type Timestamp = UTCTime
-data Location = Location Double Double -- x, y position in meters
+data Location = Location Double Double deriving (Eq, Show) -- x, y position in meters
 type Temperature = Double -- temperature in degrees kelvin
 data ObservatoryID = ObservatoryID String deriving (Eq, Show, Ord)
 data Observation = Observation {
@@ -14,7 +18,7 @@ data Observation = Observation {
   location :: Location,
   temperature :: Temperature,
   observatoryID :: ObservatoryID
-  }
+  } deriving (Eq)
 
 -- for these functions, we are *trying* to take advantage of laziness,
 -- so that we can write code without dealing with the requirement that
@@ -49,3 +53,14 @@ distance :: Location -> Location -> Double
 distance (Location x1 y1) (Location x2 y2) = sqrt (x ** 2 + y ** 2)
   where x = x1 - x2
         y = y1 - y2
+
+observationToString :: Observation -> String
+observationToString observation
+  = formatTime defaultTimeLocale "%FT%R" (timestamp observation)
+  ++ "|"
+  ++ showLocation (location observation)
+  ++ "|"
+  ++ show (temperature observation)
+  ++ "|"
+  ++ show (observatoryID observation)
+  where showLocation (Location x y) = show x ++ "," ++ show y
