@@ -45,7 +45,7 @@ randomObservation :: IO Observation
 randomObservation = do
   timestamp <- randomIO
   location <- randomIO
-  temperature <- randomIO
+  temperature <- randomRIO (-10000, 10000)
   observatoryID <- getStdRandom randomObservatoryID -- phew, getStdRandom exists so i can maintain my hack
   pure Observation {
            timestamp = timestamp,
